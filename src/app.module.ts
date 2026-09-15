@@ -1,3 +1,4 @@
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -11,6 +12,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { MatchingModule } from './modules/matching/matching.module';
+import { LedgerModule } from './modules/ledger/ledger.module';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { MatchingModule } from './modules/matching/matching.module';
     PaymentModule,
     DriversModule,
     MatchingModule,
+    LedgerModule,
   ],
   providers: [
     {
