@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { MerchantsModule } from './modules/merchants/merchants.module';
 import { ProductsModule } from './modules/products/products.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProductsModule } from './modules/products/products.module';
     UsersModule,
     MerchantsModule,
     ProductsModule,
+    OrdersModule,
   ],
   providers: [
     {
@@ -33,5 +35,4 @@ import { ProductsModule } from './modules/products/products.module';
   ],
 })
 export class AppModule {}
-
 

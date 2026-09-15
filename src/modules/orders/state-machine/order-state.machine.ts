@@ -1,4 +1,5 @@
-// src/modules/orders/state-machine/order-state.machine.ts
+import { BadRequestException } from '@nestjs/common';
+
 export enum OrderStatus {
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PAID = 'PAID',
@@ -11,73 +12,83 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED',
 }
 
-interface Transition {
-  from: OrderStatus;
-  to: OrderStatus;
-  validate?: (context: any) => boolean | Promise<boolean>;
-}
+/**
+ * Peta transisi status yang valid.
+ * Key = status sekarang, Value = array status yang boleh jadi berikutnya.
+ */
+const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  [OrderStatus.PENDING_PAYMENT]: [
+    OrderStatus.PAID,
+    OrderStatus.CANCELLED,
+  ],
+  [OrderStatus.PAID]: [
+    OrderStatus.SEARCHING_DRIVER,
+    OrderStatus.CANCELLED,
+  ],
+  [OrderStatus.SEARCHING_DRIVER]: [
+    OrderStatus.ACCEPTED_BY_DRIVER,
+    OrderStatus.CANCELLED,
+  ],
+  [OrderStatus.ACCEPTED_BY_DRIVER]: [
+    OrderStatus.PREPARING,
+    OrderStatus.CANCELLED,
+  ],
+  [OrderStatus.PREPARING]: [
+    OrderStatus.READY_FOR_PICKUP,
+    OrderStatus.CANCELLED,
+  ],
+  [OrderStatus.READY_FOR_PICKUP]: [
+    OrderStatus.PICKED_UP,
+    OrderStatus.CANCELLED,
+  ],
+  [OrderStatus.PICKED_UP]: [
+    OrderStatus.COMPLETED,
+  ],
+  [OrderStatus.COMPLETED]: [],
+  [OrderStatus.CANCELLED]: [],
+};
 
 export class OrderStateMachine {
-  private transitions: Transition[] = [
-    {
-      from: OrderStatus.PENDING_PAYMENT,
-      to: OrderStatus.PAID,
-      validate: (ctx) => ctx.paymentVerified === true,
-    },
-    {
-      from: OrderStatus.PAID,
-      to: OrderStatus.SEARCHING_DRIVER,
-      validate: (ctx) => ctx.merchantIsOpen === true,
-    },
-    {
-      from: OrderStatus.SEARCHING_DRIVER,
-      to: OrderStatus.ACCEPTED_BY_DRIVER,
-      validate: (ctx) => ctx.driverValid === true,
-    },
-    {
-      from: OrderStatus.ACCEPTED_BY_DRIVER,
-      to: OrderStatus.PREPARING,
-      validate: (ctx) => ctx.isMerchantOwner === true,
-    },
-    {
-      from: OrderStatus.PREPARING,
-      to: OrderStatus.READY_FOR_PICKUP,
-      validate: (ctx) => ctx.isMerchantOwner === true,
-    },
-    {
-      from: OrderStatus.READY_FOR_PICKUP,
-      to: OrderStatus.PICKED_UP,
-      validate: (ctx) => ctx.driverNearMerchant === true,
-    },
-    {
-      from: OrderStatus.PICKED_UP,
-      to: OrderStatus.COMPLETED,
-      validate: (ctx) => ctx.driverNearConsumer === true,
-    },
-  ];
-
-  async canTransition(from: OrderStatus, to: OrderStatus, context: any): Promise<boolean> {
-    const transition = this.transitions.find(
-      (t) => t.from === from && t.to === to
-    );
-    
-    if (!transition) return false;
-    if (transition.validate) {
-      return await transition.validate(context);
-    }
-    return true;
+  /**
+   * Cek apakah transisi dari currentStatus ke newStatus valid.
+   */
+  static canTransition(
+    currentStatus: OrderStatus,
+    newStatus: OrderStatus,
+  ): boolean {
+    const allowed = TRANSITIONS[currentStatus] ?? [];
+    return allowed.includes(newStatus);
   }
 
-  async transition(order: any, to: OrderStatus, context: any): Promise<void> {
-    const canProceed = await this.canTransition(order.status, to, context);
-    
-    if (!canProceed) {
-      throw new Error(
-        `Invalid transition from ${order.status} to ${to}`
+  /**
+   * Validasi transisi, throw error kalau tidak valid.
+   */
+  static validateTransition(
+    currentStatus: OrderStatus,
+    newStatus: OrderStatus,
+  ): void {
+    if (!this.canTransition(currentStatus, newStatus)) {
+      throw new BadRequestException(
+        `Transisi status tidak valid: ${currentStatus} → ${newStatus}. ` +
+          `Status yang diizinkan: ${(TRANSITIONS[currentStatus] ?? []).join(', ') || 'tidak ada'}`,
       );
     }
-    
-    order.status = to;
-    order.updated_at = new Date();
+  }
+
+  /**
+   * Cek apakah status adalah status final (tidak bisa berubah lagi).
+   */
+  static isFinal(status: OrderStatus): boolean {
+    return (
+      status === OrderStatus.COMPLETED ||
+      status === OrderStatus.CANCELLED
+    );
+  }
+
+  /**
+   * Ambil daftar status yang boleh jadi berikutnya.
+   */
+  static getNextStatuses(currentStatus: OrderStatus): OrderStatus[] {
+    return TRANSITIONS[currentStatus] ?? [];
   }
 }
