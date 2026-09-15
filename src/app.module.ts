@@ -10,6 +10,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { DriversModule } from './modules/drivers/drivers.module';
+import { MatchingModule } from './modules/matching/matching.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DriversModule } from './modules/drivers/drivers.module';
     OrdersModule,
     PaymentModule,
     DriversModule,
+    MatchingModule,
   ],
   providers: [
     {
