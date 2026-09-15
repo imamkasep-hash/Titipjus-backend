@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { MerchantsModule } from './modules/merchants/merchants.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UsersModule } from './modules/users/users.module';
 
     AuthModule,
     UsersModule,
+    MerchantsModule,
   ],
   providers: [
     {
@@ -29,3 +31,6 @@ import { UsersModule } from './modules/users/users.module';
   ],
 })
 export class AppModule {}
+
+
+
