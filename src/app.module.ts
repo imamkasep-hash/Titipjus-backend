@@ -22,6 +22,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { BannersModule } from './modules/banners/banners.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ShiftsModule } from './modules/shifts/shifts.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     AdminModule,
     BannersModule,
     NotificationsModule,
+    ShiftsModule,
   ],
   providers: [
     {
@@ -63,4 +65,3 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
   ],
 })
 export class AppModule {}
-
