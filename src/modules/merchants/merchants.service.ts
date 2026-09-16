@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
+import { SetScheduleDto } from './dto/set-schedule.dto';
 import { SearchMerchantDto } from './dto/search-merchant.dto';
 
 @Injectable()
@@ -374,5 +379,176 @@ export class MerchantsService {
       offset,
       has_more: (count ?? 0) > offset + limit,
     };
+  }
+  /**
+   * Set jadwal operasional merchant (replace semua).
+   */
+  async setSchedules(merchantId: string, dto: SetScheduleDto) {
+    const admin = this.supabase.getAdmin();
+
+    // Validasi merchant
+    const merchant = await this.findById(merchantId);
+    if (!merchant) throw new NotFoundException('Merchant tidak ditemukan');
+
+    // Validasi: close_time > open_time
+    for (const s of dto.schedules) {
+      if (s.close_time <= s.open_time) {
+        throw new BadRequestException(
+          `Hari ${s.day_of_week}: close_time harus lebih besar dari open_time`,
+        );
+      }
+    }
+
+    // Hapus semua schedule lama
+    await admin
+      .from('merchant_schedules')
+      .delete()
+      .eq('merchant_id', merchantId);
+
+    // Insert baru
+    const payload = dto.schedules.map((s) => ({
+      merchant_id: merchantId,
+      day_of_week: s.day_of_week,
+      open_time: s.open_time,
+      close_time: s.close_time,
+      is_active: s.is_active ?? true,
+    }));
+
+    if (payload.length > 0) {
+      const { error } = await admin
+        .from('merchant_schedules')
+        .insert(payload);
+
+      if (error) throw error;
+    }
+
+    return this.getSchedules(merchantId);
+  }
+
+  /**
+   * Ambil semua jadwal merchant.
+   */
+  async getSchedules(merchantId: string) {
+    const { data, error } = await this.supabase
+      .getAdmin()
+      .from('merchant_schedules')
+      .select('*')
+      .eq('merchant_id', merchantId)
+      .eq('is_active', true)
+      .order('day_of_week', { ascending: true })
+      .order('open_time', { ascending: true });
+
+    if (error) throw error;
+
+    // Group by day_of_week
+    const grouped: Record<number, any[]> = {};
+    (data ?? []).forEach((s) => {
+      if (!grouped[s.day_of_week]) grouped[s.day_of_week] = [];
+      grouped[s.day_of_week].push({
+        id: s.id,
+        open_time: s.open_time,
+        close_time: s.close_time,
+      });
+    });
+
+    return {
+      merchant_id: merchantId,
+      schedules: grouped,
+      total_shifts: data?.length ?? 0,
+    };
+  }
+
+  /**
+   * Cek apakah merchant sedang buka sekarang.
+   */
+  async getOperatingStatus(merchantId: string, timezone = 'Asia/Jakarta') {
+    const admin = this.supabase.getAdmin();
+
+    const { data, error } = await admin
+      .from('merchant_schedules')
+      .select('*')
+      .eq('merchant_id', merchantId)
+      .eq('is_active', true);
+
+    if (error) throw error;
+
+    // Waktu sekarang di timezone merchant
+    const now = new Date();
+    const timeInTz = now.toLocaleString('en-US', {
+      timeZone: timezone,
+      hour12: false,
+    });
+
+    // Parse: "09/16/2026, 13:13:00"
+    const parts = timeInTz.split(', ');
+    const datePart = parts[0].split('/'); // [MM, DD, YYYY]
+    const timePart = parts[1].split(':'); // [HH, MM, SS]
+
+    const dayOfWeek = new Date(
+      parseInt(datePart[2]),
+      parseInt(datePart[0]) - 1,
+      parseInt(datePart[1]),
+    ).getDay();
+
+    const currentTime = `${timePart[0]}:${timePart[1]}:00`; // HH:MM:SS
+
+    // Cek apakah ada schedule yang cocok
+    const matchingShifts = (data ?? []).filter(
+      (s) =>
+        s.day_of_week === dayOfWeek &&
+        currentTime >= s.open_time &&
+        currentTime < s.close_time,
+    );
+
+    const isOpen = matchingShifts.length > 0;
+
+    return {
+      merchant_id: merchantId,
+      is_open_now: isOpen,
+      current_day: dayOfWeek,
+      current_time: currentTime.substring(0, 5),
+      timezone,
+      matching_shifts: matchingShifts,
+      all_schedules_today: (data ?? []).filter(
+        (s) => s.day_of_week === dayOfWeek,
+      ),
+    };
+  }
+
+  /**
+   * Update jadwal 1 hari tertentu.
+   */
+  async updateScheduleDay(
+    merchantId: string,
+    dayOfWeek: number,
+    shifts: { open_time: string; close_time: string }[],
+  ) {
+    const admin = this.supabase.getAdmin();
+
+    // Hapus schedule lama untuk hari itu
+    await admin
+      .from('merchant_schedules')
+      .delete()
+      .eq('merchant_id', merchantId)
+      .eq('day_of_week', dayOfWeek);
+
+    // Insert baru
+    if (shifts.length > 0) {
+      const payload = shifts.map((s) => ({
+        merchant_id: merchantId,
+        day_of_week: dayOfWeek,
+        open_time: s.open_time,
+        close_time: s.close_time,
+        is_active: true,
+      }));
+
+      const { error } = await admin
+        .from('merchant_schedules')
+        .insert(payload);
+
+      if (error) throw error;
+    }
+
+    return this.getSchedules(merchantId);
   }
 }

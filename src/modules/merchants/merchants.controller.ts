@@ -9,11 +9,13 @@ import {
   UseGuards,
   Req,
   Query,
-} from '@nestjs/common';
-import { MerchantsService } from './merchants.service';
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';import { MerchantsService } from './merchants.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
 import { SearchMerchantDto } from './dto/search-merchant.dto';
+import { SetScheduleDto } from './dto/set-schedule.dto';
 import { SupabaseAuthGuard } from '../../common/guards/supabase-auth.guard';
 
 @Controller('merchants')
@@ -127,6 +129,57 @@ export class MerchantsController {
   @Get('search')
   search(@Query() dto: SearchMerchantDto) {
     return this.merchantsService.search(dto);
+  }
+  /**
+   * Set jadwal operasional merchant.
+   */
+  @Post(':id/schedules')
+  @UseGuards(SupabaseAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  setSchedules(
+    @Param('id') id: string,
+    @Body() dto: SetScheduleDto,
+  ) {
+    return this.merchantsService.setSchedules(id, dto);
+  }
+
+  /**
+   * Lihat jadwal operasional merchant.
+   */
+  @Get(':id/schedules')
+  getSchedules(@Param('id') id: string) {
+    return this.merchantsService.getSchedules(id);
+  }
+
+  /**
+   * Cek apakah merchant sedang buka sekarang.
+   */
+  @Get(':id/operating-status')
+  getOperatingStatus(
+    @Param('id') id: string,
+    @Query('timezone') timezone?: string,
+  ) {
+    return this.merchantsService.getOperatingStatus(
+      id,
+      timezone ?? 'Asia/Jakarta',
+    );
+  }
+
+  /**
+   * Update jadwal 1 hari.
+   */
+  @Patch(':id/schedules/:dayOfWeek')
+  @UseGuards(SupabaseAuthGuard)
+  updateScheduleDay(
+    @Param('id') id: string,
+    @Param('dayOfWeek') dayOfWeek: string,
+    @Body() body: { shifts: { open_time: string; close_time: string }[] },
+  ) {
+    return this.merchantsService.updateScheduleDay(
+      id,
+      parseInt(dayOfWeek),
+      body.shifts,
+    );
   }
   @Get(':id')
   findById(@Param('id') id: string) {
