@@ -30,3 +30,4 @@ coverage/
 # Backup
 .backup/
 *.tsbuildinfo
+firebase/*.json
