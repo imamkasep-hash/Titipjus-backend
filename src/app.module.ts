@@ -15,6 +15,7 @@ import { LedgerModule } from './modules/ledger/ledger.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { PromosModule } from './modules/promos/promos.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     RealtimeModule,
     ChatModule,
     ReviewsModule,
+    PromosModule,
   ],
   providers: [
     {
