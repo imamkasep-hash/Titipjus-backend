@@ -10,7 +10,7 @@ import {
   OrderStateMachine,
   OrderStatus,
 } from './state-machine/order-state.machine';
-
+import { CancelOrderDto } from './dto/cancel-order.dto';
 @Injectable()
 export class OrdersService {
     constructor(
@@ -206,5 +206,153 @@ export class OrdersService {
 
     if (error) throw error;
     return { message: 'Order berhasil dihapus' };
+  }
+  /**
+   * Cek apakah order bisa di-cancel.
+   */
+  async canCancel(orderId: string, userId: string) {
+    const admin = this.supabase.getAdmin();
+
+    const { data: order, error } = await admin
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+
+    // Validasi owner
+    if (order.consumer_id !== userId) {
+      return {
+        can_cancel: false,
+        reason: 'Anda bukan pemilik order ini',
+      };
+    }
+
+    // Sudah cancelled?
+    if (order.status === 'CANCELLED') {
+      return { can_cancel: false, reason: 'Order sudah dibatalkan' };
+    }
+
+    // Sudah COMPLETED?
+    if (order.status === 'COMPLETED') {
+      return { can_cancel: false, reason: 'Order sudah selesai' };
+    }
+
+    // Window 5 menit setelah created (kalau status PENDING_PAYMENT atau PAID)
+    const canCancelStatus = [
+      'PENDING_PAYMENT',
+      'PAID',
+      'SEARCHING_DRIVER',
+    ];
+
+    if (!canCancelStatus.includes(order.status)) {
+      return {
+        can_cancel: false,
+        reason: `Order dengan status ${order.status} tidak bisa dibatalkan. Driver sudah dalam perjalanan.`,
+      };
+    }
+
+    // Cek window waktu (5 menit setelah PAID atau setelah create)
+    const createdAt = new Date(order.created_at).getTime();
+    const now = Date.now();
+    const fiveMinutes = 5 * 60 * 1000;
+
+    if (order.status === 'PENDING_PAYMENT') {
+      return { can_cancel: true, reason: null, free_cancel: true };
+    }
+
+    if (now - createdAt > fiveMinutes && order.status === 'PAID') {
+      return {
+        can_cancel: true,
+        reason: null,
+        free_cancel: false,
+        message: 'Cancel setelah 5 menit mungkin ada biaya',
+      };
+    }
+
+    return { can_cancel: true, reason: null, free_cancel: true };
+  }
+
+  /**
+   * Cancel order.
+   */
+  async cancel(orderId: string, userId: string, dto: CancelOrderDto) {
+    const admin = this.supabase.getAdmin();
+
+    // 1. Cek bisa cancel
+    const check = await this.canCancel(orderId, userId);
+
+    if (!check.can_cancel) {
+      throw new BadRequestException(check.reason);
+    }
+
+    // 2. Ambil order
+    const { data: order, error: orderError } = await admin
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (orderError) throw orderError;
+    if (!order) throw new NotFoundException('Order tidak ditemukan');
+
+    // 3. Kalau PAID, refund via ledger
+    if (order.status === 'PAID' && order.driver_id === null) {
+      // Nanti: refund via ledger (kita skip dulu, karena wallet user belum ada transaksi)
+      // TODO: implement refund
+    }
+
+    // 4. Update order
+    const { data: updated, error: updateError } = await admin
+      .from('orders')
+      .update({
+        status: 'CANCELLED',
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: userId,
+        cancellation_reason: dto.reason ?? 'Dibatalkan oleh user',
+      })
+      .eq('id', orderId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // 5. Kalau ada driver, bebaskan
+    if (order.driver_id) {
+      await admin
+        .from('drivers')
+        .update({ is_busy: false })
+        .eq('id', order.driver_id);
+    }
+
+    // 6. Broadcast realtime
+    const payload = {
+      order_id: orderId,
+      status: 'CANCELLED',
+      reason: dto.reason ?? 'Dibatalkan oleh user',
+    };
+
+    this.realtime.emitToUser(order.consumer_id, 'order_cancelled', payload);
+    this.realtime.emitToOrder(orderId, 'order_updated', payload);
+
+    // Ke driver (kalau ada)
+    if (order.driver_id) {
+      const { data: driver } = await admin
+        .from('drivers')
+        .select('user_id')
+        .eq('id', order.driver_id)
+        .maybeSingle();
+
+      if (driver?.user_id) {
+        this.realtime.emitToUser(driver.user_id, 'order_cancelled', payload);
+      }
+    }
+
+    return {
+      message: 'Order berhasil dibatalkan',
+      order: updated,
+    };
   }
 }
