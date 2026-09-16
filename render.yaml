@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: titipjus-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: pnpm install && pnpm run build
+    startCommand: node dist/main
+    healthCheckPath: /api/health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
