@@ -15,7 +15,12 @@ export class LoggerMiddleware implements NestMiddleware {
     const userAgent = req.get('user-agent') ?? 'unknown';
 
     // Skip health check dari log (biar tidak spam)
-    const skipPaths = ['/health', '/health/live', '/health/ready'];
+        const skipPaths = [
+      '/api/v1/health',
+      '/api/v1/health/live',
+      '/api/v1/health/ready',
+      '/api/docs',
+    ];
     const shouldSkip = skipPaths.some((p) => originalUrl.startsWith(p));
 
     // Log saat response selesai

@@ -1,4 +1,4 @@
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ValidationPipe, Logger, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -6,6 +6,15 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  // 🌐 Global prefix: /api
+  app.setGlobalPrefix('api');
+
+  // 🔢 API Versioning: /api/v1/...
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -53,10 +62,17 @@ async function bootstrap() {
     .addTag('Chat', 'User-driver chat')
     .addTag('Reviews', 'Rating & review')
     .addTag('Promos', 'Promo & voucher')
+    .addTag('Reports', 'Report & complaint')
+    .addTag('Admin', 'Admin panel')
+    .addTag('Banners', 'Banner & promo content')
+    .addTag('Notifications', 'Push notifications')
+    .addTag('Shifts', 'Driver shift & zones')
+    .addTag('Refunds', 'Refund management')
+    .addTag('Health', 'Health check')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document, {
+  SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },
@@ -65,6 +81,7 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');
   logger.log(`🚀 Server jalan di http://localhost:${port}`);
-  logger.log(`📚 API Docs: http://localhost:${port}/api-docs`);
+  logger.log(`📚 API Docs: http://localhost:${port}/api/docs`);
+  logger.log(`🔗 API Base: http://localhost:${port}/api/v1`);
 }
 bootstrap();
