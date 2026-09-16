@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { MerchantsModule } from './modules/merchants/merchants.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { DriversModule } from './modules/drivers/drivers.module';
@@ -35,6 +36,7 @@ import { PromosModule } from './modules/promos/promos.module';
     MerchantsModule,
     ProductsModule,
     CategoriesModule,
+    FavoritesModule,
     OrdersModule,
     PaymentModule,
     DriversModule,
