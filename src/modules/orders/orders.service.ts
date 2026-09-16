@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
   OrderStateMachine,
@@ -12,7 +13,10 @@ import {
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly supabase: SupabaseService) {}
+    constructor(
+    private readonly supabase: SupabaseService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   /**
    * Buat order baru.
@@ -144,7 +148,7 @@ export class OrdersService {
   /**
    * Update status order dengan validasi state machine.
    */
-  async updateStatus(id: string, newStatus: OrderStatus) {
+     async updateStatus(id: string, newStatus: OrderStatus) {
     const order = await this.findById(id);
 
     // Validasi transisi
@@ -162,7 +166,35 @@ export class OrdersService {
       .single();
 
     if (error) throw error;
-    return data;
+
+    // 🔔 Broadcast realtime
+    const payload = {
+      order_id: id,
+      status: newStatus,
+      updated_at: data.updated_at,
+    };
+
+    // Ke consumer
+    this.realtime.emitToUser(order.consumer_id, 'order_status_changed', payload);
+
+    // Ke room order
+    this.realtime.emitToOrder(id, 'order_updated', payload);
+
+    // Ke driver (kalau ada)
+    if (order.driver_id) {
+      const { data: driver } = await this.supabase
+        .getAdmin()
+        .from('drivers')
+        .select('user_id')
+        .eq('id', order.driver_id)
+        .maybeSingle();
+
+      if (driver?.user_id) {
+        this.realtime.emitToUser(driver.user_id, 'order_status_changed', payload);
+      }
+    }
+
+        return data;
   }
 
   async remove(id: string) {
