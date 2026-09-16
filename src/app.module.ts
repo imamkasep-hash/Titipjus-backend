@@ -21,6 +21,7 @@ import { PromosModule } from './modules/promos/promos.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { BannersModule } from './modules/banners/banners.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { BannersModule } from './modules/banners/banners.module';
     ReportsModule,
     AdminModule,
     BannersModule,
+    NotificationsModule,
   ],
   providers: [
     {
@@ -61,3 +63,4 @@ import { BannersModule } from './modules/banners/banners.module';
   ],
 })
 export class AppModule {}
+
