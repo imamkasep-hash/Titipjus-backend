@@ -19,6 +19,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { PromosModule } from './modules/promos/promos.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     ReviewsModule,
     PromosModule,
     ReportsModule,
+    AdminModule,
   ],
   providers: [
     {
