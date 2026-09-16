@@ -15,6 +15,7 @@ import { DriversService } from './drivers.service';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 import { SupabaseAuthGuard } from '../../common/guards/supabase-auth.guard';
 
 @Controller('drivers')
@@ -60,7 +61,42 @@ export class DriversController {
   getLocation(@Param('id') id: string) {
     return this.driversService.getDriverLocation(id);
   }
+    /**
+   * Earnings summary driver.
+   */
+  @Get('earnings')
+  @UseGuards(SupabaseAuthGuard)
+  getEarnings(@Req() req: any) {
+    return this.driversService.getEarningsSummary(req.user.userId);
+  }
 
+  /**
+   * History earnings driver.
+   */
+  @Get('earnings/history')
+  @UseGuards(SupabaseAuthGuard)
+  getEarningsHistory(@Req() req: any) {
+    return this.driversService.getEarningsHistory(req.user.userId);
+  }
+
+  /**
+   * Request penarikan saldo.
+   */
+  @Post('withdraw')
+  @UseGuards(SupabaseAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  requestWithdraw(@Req() req: any, @Body() dto: WithdrawDto) {
+    return this.driversService.requestWithdraw(req.user.userId, dto);
+  }
+
+  /**
+   * List semua withdrawal.
+   */
+  @Get('withdrawals')
+  @UseGuards(SupabaseAuthGuard)
+  getWithdrawals(@Req() req: any) {
+    return this.driversService.getWithdrawals(req.user.userId);
+  }
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.driversService.findById(id);

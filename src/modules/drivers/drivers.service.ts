@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
+import { WithdrawDto } from './dto/withdraw.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
@@ -221,6 +226,164 @@ export class DriversService {
       ...driver,
       location: loc ? { lng: loc.lng, lat: loc.lat } : null,
     };
+  }
+  /**
+   * Earnings summary driver: total trip, total earning, avg per trip.
+   */
+  async getEarningsSummary(driverUserId: string) {
+    const admin = this.supabase.getAdmin();
+
+    // 1. Cari driver
+    const { data: driver, error: driverError } = await admin
+      .from('drivers')
+      .select('id, user_id')
+      .eq('user_id', driverUserId)
+      .maybeSingle();
+
+    if (driverError) throw driverError;
+    if (!driver) throw new NotFoundException('Driver tidak ditemukan');
+
+    // 2. Ambil orders COMPLETED dengan driver ini
+    const { data: orders, error: ordersError } = await admin
+      .from('orders')
+      .select('id, delivery_fee, total_amount, created_at')
+      .eq('driver_id', driver.id)
+      .eq('status', 'COMPLETED');
+
+    if (ordersError) throw ordersError;
+
+    const totalTrips = orders?.length ?? 0;
+    const totalEarnings = (orders ?? []).reduce(
+      (sum, o) => sum + Number(o.delivery_fee ?? 0),
+      0,
+    );
+
+    // 3. Wallet balance
+    const { data: wallet } = await admin
+      .from('wallets')
+      .select('id, balance, currency')
+      .eq('user_id', driverUserId)
+      .maybeSingle();
+
+    return {
+      driver_id: driver.id,
+      total_trips: totalTrips,
+      total_earnings: Number(totalEarnings.toFixed(2)),
+      average_per_trip:
+        totalTrips > 0
+          ? Number((totalEarnings / totalTrips).toFixed(2))
+          : 0,
+      wallet_balance: Number(wallet?.balance ?? 0),
+      currency: wallet?.currency ?? 'IDR',
+    };
+  }
+
+  /**
+   * History earnings driver (dari ledger transactions).
+   */
+  async getEarningsHistory(driverUserId: string, limit = 50) {
+    const admin = this.supabase.getAdmin();
+
+    // 1. Ambil wallet
+    const { data: wallet, error: walletError } = await admin
+      .from('wallets')
+      .select('id')
+      .eq('user_id', driverUserId)
+      .maybeSingle();
+
+    if (walletError) throw walletError;
+    if (!wallet) return { transactions: [] };
+
+    // 2. Ambil ledger transactions yang masuk ke wallet ini
+    const { data: transactions, error } = await admin
+      .from('ledger_transactions')
+      .select('*')
+      .eq('to_wallet_id', wallet.id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+
+    return {
+      wallet_id: wallet.id,
+      total_transactions: transactions?.length ?? 0,
+      transactions: transactions ?? [],
+    };
+  }
+
+  /**
+   * Request penarikan saldo.
+   */
+  async requestWithdraw(driverUserId: string, dto: WithdrawDto) {
+    const admin = this.supabase.getAdmin();
+
+    // 1. Ambil wallet
+    const { data: wallet, error: walletError } = await admin
+      .from('wallets')
+      .select('*')
+      .eq('user_id', driverUserId)
+      .maybeSingle();
+
+    if (walletError) throw walletError;
+    if (!wallet) throw new NotFoundException('Wallet tidak ditemukan');
+
+    // 2. Cek saldo cukup
+    if (Number(wallet.balance) < dto.amount) {
+      throw new BadRequestException(
+        `Saldo tidak cukup. Saldo: ${wallet.balance}, dibutuhkan: ${dto.amount}`,
+      );
+    }
+
+    // 3. Cek apakah ada withdrawal PENDING
+    const { data: existingPending } = await admin
+      .from('withdrawals')
+      .select('id')
+      .eq('user_id', driverUserId)
+      .eq('status', 'PENDING')
+      .maybeSingle();
+
+    if (existingPending) {
+      throw new BadRequestException(
+        'Anda masih punya request penarikan yang PENDING',
+      );
+    }
+
+    // 4. Insert withdrawal
+    const { data: withdrawal, error: insertError } = await admin
+      .from('withdrawals')
+      .insert({
+        user_id: driverUserId,
+        amount: dto.amount,
+        bank_name: dto.bank_name,
+        bank_account_number: dto.bank_account_number,
+        bank_account_name: dto.bank_account_name,
+        notes: dto.notes ?? null,
+        status: 'PENDING',
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    return {
+      ...withdrawal,
+      message: 'Request penarikan berhasil dibuat, menunggu approval admin',
+    };
+  }
+
+  /**
+   * List semua withdrawal driver.
+   */
+  async getWithdrawals(driverUserId: string) {
+    const { data, error } = await this.supabase
+      .getAdmin()
+      .from('withdrawals')
+      .select('*')
+      .eq('user_id', driverUserId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data ?? [];
   }
 }
 
