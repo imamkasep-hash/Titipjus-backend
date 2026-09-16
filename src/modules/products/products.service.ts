@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { SearchProductDto } from './dto/search-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -85,5 +86,58 @@ export class ProductsService {
 
     if (error) throw error;
     return { message: 'Produk berhasil dihapus' };
+  }
+  /**
+   * Search & filter products.
+   */
+  async search(dto: SearchProductDto) {
+    const admin = this.supabase.getAdmin();
+
+    let query = admin.from('products').select('*', { count: 'exact' });
+
+    // Search by name (case-insensitive)
+    if (dto.search) {
+      query = query.ilike('name', `%${dto.search}%`);
+    }
+
+    // Filter merchant
+    if (dto.merchant_id) {
+      query = query.eq('merchant_id', dto.merchant_id);
+    }
+
+    // Filter price range
+    if (dto.min_price !== undefined) {
+      query = query.gte('price', dto.min_price);
+    }
+    if (dto.max_price !== undefined) {
+      query = query.lte('price', dto.max_price);
+    }
+
+    // Filter availability
+    if (dto.is_available !== undefined) {
+      query = query.eq('is_available', dto.is_available);
+    }
+
+    // Sort
+    const sortBy = dto.sort_by ?? 'created_at';
+    const sortOrder = dto.sort_order ?? 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    // Pagination
+    const limit = dto.limit ?? 20;
+    const offset = dto.offset ?? 0;
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      data: data ?? [],
+      total: count ?? 0,
+      limit,
+      offset,
+      has_more: (count ?? 0) > offset + limit,
+    };
   }
 }

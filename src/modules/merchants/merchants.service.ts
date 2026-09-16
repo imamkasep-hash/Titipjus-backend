@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
+import { SearchMerchantDto } from './dto/search-merchant.dto';
 
 @Injectable()
 export class MerchantsService {
@@ -327,6 +328,51 @@ export class MerchantsService {
       merchant_id: merchantId,
       days,
       data: result,
+    };
+  }
+  /**
+   * Search & filter merchants.
+   */
+  async search(dto: SearchMerchantDto) {
+    const admin = this.supabase.getAdmin();
+
+    let query = admin.from('merchants').select('*', { count: 'exact' });
+
+    // Search by store_name (case-insensitive)
+    if (dto.search) {
+      query = query.ilike('store_name', `%${dto.search}%`);
+    }
+
+    // Filter is_open
+    if (dto.is_open !== undefined) {
+      query = query.eq('is_open', dto.is_open);
+    }
+
+    // Filter rating
+    if (dto.min_rating !== undefined) {
+      query = query.gte('rating', dto.min_rating);
+    }
+
+    // Sort
+    const sortBy = dto.sort_by ?? 'created_at';
+    const sortOrder = dto.sort_order ?? 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    // Pagination
+    const limit = dto.limit ?? 20;
+    const offset = dto.offset ?? 0;
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    return {
+      data: data ?? [],
+      total: count ?? 0,
+      limit,
+      offset,
+      has_more: (count ?? 0) > offset + limit,
     };
   }
 }

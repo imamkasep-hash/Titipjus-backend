@@ -7,10 +7,12 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { SearchProductDto } from './dto/search-product.dto';
 import { SupabaseAuthGuard } from '../../common/guards/supabase-auth.guard';
 
 @Controller('products')
@@ -27,7 +29,13 @@ export class ProductsController {
   findAll() {
     return this.productsService.findAll();
   }
-
+    /**
+   * Search & filter products.
+   */
+  @Get('search')
+  search(@Query() dto: SearchProductDto) {
+    return this.productsService.search(dto);
+  }
   @Get('merchant/:merchantId')
   findByMerchant(@Param('merchantId') merchantId: string) {
     return this.productsService.findByMerchantId(merchantId);

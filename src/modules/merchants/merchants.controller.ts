@@ -13,6 +13,7 @@ import {
 import { MerchantsService } from './merchants.service';
 import { CreateMerchantDto } from './dto/create-merchant.dto';
 import { UpdateMerchantDto } from './dto/update-merchant.dto';
+import { SearchMerchantDto } from './dto/search-merchant.dto';
 import { SupabaseAuthGuard } from '../../common/guards/supabase-auth.guard';
 
 @Controller('merchants')
@@ -120,7 +121,13 @@ export class MerchantsController {
       radius ? parseFloat(radius) : 5,
     );
   }
-
+    /**
+   * Search & filter merchants.
+   */
+  @Get('search')
+  search(@Query() dto: SearchMerchantDto) {
+    return this.merchantsService.search(dto);
+  }
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.merchantsService.findById(id);
