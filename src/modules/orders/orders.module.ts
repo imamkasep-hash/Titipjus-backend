@@ -4,9 +4,10 @@ import { OrdersService } from './orders.service';
 import { SupabaseService } from '../../database/supabase.service';
 import { SupabaseAuthGuard } from '../../common/guards/supabase-auth.guard';
 import { RealtimeModule } from '../realtime/realtime.module';
+import { RefundsModule } from '../refunds/refunds.module';
 
 @Module({
-  imports: [RealtimeModule],
+  imports: [RealtimeModule, RefundsModule],
   controllers: [OrdersController],
   providers: [OrdersService, SupabaseService, SupabaseAuthGuard],
   exports: [OrdersService],

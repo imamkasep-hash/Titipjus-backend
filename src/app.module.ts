@@ -23,7 +23,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { BannersModule } from './modules/banners/banners.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
-
+import { RefundsModule } from './modules/refunds/refunds.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -56,6 +56,7 @@ import { ShiftsModule } from './modules/shifts/shifts.module';
     BannersModule,
     NotificationsModule,
     ShiftsModule,
+    RefundsModule,
   ],
   providers: [
     {

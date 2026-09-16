@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseService } from '../../database/supabase.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { RefundsService } from '../refunds/refunds.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
   OrderStateMachine,
@@ -13,11 +14,11 @@ import {
 import { CancelOrderDto } from './dto/cancel-order.dto';
 @Injectable()
 export class OrdersService {
-    constructor(
+      constructor(
     private readonly supabase: SupabaseService,
     private readonly realtime: RealtimeGateway,
+    private readonly refunds: RefundsService,
   ) {}
-
   /**
    * Buat order baru.
    * Hitung total dari harga produk × qty.
@@ -298,12 +299,15 @@ export class OrdersService {
     if (orderError) throw orderError;
     if (!order) throw new NotFoundException('Order tidak ditemukan');
 
-    // 3. Kalau PAID, refund via ledger
-    if (order.status === 'PAID' && order.driver_id === null) {
-      // Nanti: refund via ledger (kita skip dulu, karena wallet user belum ada transaksi)
-      // TODO: implement refund
+        // 3. Kalau PAID, auto-create refund request
+    if (order.status === 'PAID') {
+      try {
+        await this.refunds.autoCreateRefund(orderId);
+      } catch (err) {
+        // Log error tapi jangan block cancel
+        console.error('Auto-refund error:', (err as Error).message);
+      }
     }
-
     // 4. Update order
     const { data: updated, error: updateError } = await admin
       .from('orders')
