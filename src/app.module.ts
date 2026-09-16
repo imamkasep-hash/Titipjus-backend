@@ -24,6 +24,8 @@ import { BannersModule } from './modules/banners/banners.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
 import { RefundsModule } from './modules/refunds/refunds.module';
+import { HealthModule } from './modules/health/health.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -57,6 +59,7 @@ import { RefundsModule } from './modules/refunds/refunds.module';
     NotificationsModule,
     ShiftsModule,
     RefundsModule,
+    HealthModule,
   ],
   providers: [
     {
