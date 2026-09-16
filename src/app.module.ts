@@ -13,6 +13,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { MatchingModule } from './modules/matching/matching.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { LedgerModule } from './modules/ledger/ledger.module';
     DriversModule,
     MatchingModule,
     LedgerModule,
+    RealtimeModule,
   ],
   providers: [
     {
