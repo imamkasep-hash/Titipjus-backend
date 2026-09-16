@@ -35,6 +35,78 @@ export class MerchantsController {
   findMine(@Req() req: any) {
     return this.merchantsService.findByUserId(req.user.userId);
   }
+    /**
+   * Statistik merchant saya.
+   */
+  @Get('stats/me')
+  @UseGuards(SupabaseAuthGuard)
+  async myStats(@Req() req: any) {
+    const merchants = await this.merchantsService.findByUserId(
+      req.user.userId,
+    );
+    if (!merchants || merchants.length === 0) {
+      return { error: 'Anda belum punya merchant' };
+    }
+    return this.merchantsService.getStats(merchants[0].id);
+  }
+
+  /**
+   * Top products merchant saya.
+   */
+  @Get('stats/me/top-products')
+  @UseGuards(SupabaseAuthGuard)
+  async myTopProducts(@Req() req: any, @Query('limit') limit?: string) {
+    const merchants = await this.merchantsService.findByUserId(
+      req.user.userId,
+    );
+    if (!merchants || merchants.length === 0) {
+      return { error: 'Anda belum punya merchant' };
+    }
+    return this.merchantsService.getTopProducts(
+      merchants[0].id,
+      limit ? parseInt(limit) : 10,
+    );
+  }
+
+  /**
+   * Revenue by date merchant saya.
+   */
+  @Get('stats/me/revenue')
+  @UseGuards(SupabaseAuthGuard)
+  async myRevenue(@Req() req: any, @Query('days') days?: string) {
+    const merchants = await this.merchantsService.findByUserId(
+      req.user.userId,
+    );
+    if (!merchants || merchants.length === 0) {
+      return { error: 'Anda belum punya merchant' };
+    }
+    return this.merchantsService.getRevenueByDate(
+      merchants[0].id,
+      days ? parseInt(days) : 7,
+    );
+  }
+
+  /**
+   * Statistik merchant by ID (public).
+   */
+  @Get('stats/:merchantId')
+  getStats(@Param('merchantId') merchantId: string) {
+    return this.merchantsService.getStats(merchantId);
+  }
+
+  /**
+   * Top products merchant by ID (public).
+   */
+  @Get('stats/:merchantId/top-products')
+  getTopProducts(
+    @Param('merchantId') merchantId: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.merchantsService.getTopProducts(
+      merchantId,
+      limit ? parseInt(limit) : 10,
+    );
+  }
 
   @Get('nearby')
   findNearby(
