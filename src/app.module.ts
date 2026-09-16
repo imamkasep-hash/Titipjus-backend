@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -14,6 +13,7 @@ import { DriversModule } from './modules/drivers/drivers.module';
 import { MatchingModule } from './modules/matching/matching.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -37,6 +37,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     MatchingModule,
     LedgerModule,
     RealtimeModule,
+    ChatModule,
   ],
   providers: [
     {
