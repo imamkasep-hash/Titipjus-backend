@@ -14,6 +14,7 @@ import { MatchingModule } from './modules/matching/matching.module';
 import { LedgerModule } from './modules/ledger/ledger.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ChatModule } from './modules/chat/chat.module';
     LedgerModule,
     RealtimeModule,
     ChatModule,
+    ReviewsModule,
   ],
   providers: [
     {
