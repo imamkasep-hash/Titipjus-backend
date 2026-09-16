@@ -18,6 +18,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { PromosModule } from './modules/promos/promos.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { PromosModule } from './modules/promos/promos.module';
     ChatModule,
     ReviewsModule,
     PromosModule,
+    ReportsModule,
   ],
   providers: [
     {
