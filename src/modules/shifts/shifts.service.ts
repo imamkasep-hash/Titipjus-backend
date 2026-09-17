@@ -94,7 +94,6 @@ export class ShiftsService {
     const admin = this.supabase.getAdmin();
 
 
-    if (error) throw error;
 
     // Filter manual pakai PostGIS via RPC
     const { data: zones } = await admin.rpc('find_zone_by_point', {
