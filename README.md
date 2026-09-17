@@ -22,7 +22,7 @@ Backend API untuk aplikasi TitipJus (delivery jus & minuman).
 
 ## 🧪 Testing
 
-- **Unit tests:** `pnpm test` (20 tests)
+- **Unit tests:** `pnpm test` (106 tests)
 - **E2E tests:** `pnpm test:e2e` (90 tests)
 - **Coverage:** `pnpm test:cov`
 
