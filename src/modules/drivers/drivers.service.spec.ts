@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { DriversService } from './drivers.service';
 import { SupabaseService } from '../../database/supabase.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
