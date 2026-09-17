@@ -2,7 +2,6 @@ import {
   IsUUID,
   IsString,
   IsNumber,
-  IsOptional,
   Min,
   MaxLength,
   MinLength,

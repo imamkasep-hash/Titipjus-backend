@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
-const API = `${BASE_URL}/api/v1`;
 
 // Unique email per test run biar tidak bentrok
 const timestamp = Date.now();

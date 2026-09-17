@@ -146,7 +146,7 @@ export class DriversService {
 
     // 2. Update lokasi + heartbeat
     const [longitude, latitude] = dto.location;
-    const { data: updated, error: updateError } = await admin
+    const { data: _updated, error: updateError } = await admin
       .from('drivers')
       .update({
         current_location: `POINT(${longitude} ${latitude})`,

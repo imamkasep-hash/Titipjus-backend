@@ -125,7 +125,7 @@ export class NotificationsService implements OnModuleInit {
         data: {
           notification_id: notification.id,
           type: dto.type,
-          ...(dto.data ?? {}),
+          ...(dto.data || {}),
         },
       });
     }

@@ -5,7 +5,6 @@ import {
   IsBoolean,
   IsUUID,
   Min,
-  Max,
   Length,
 } from 'class-validator';
 
@@ -38,4 +37,3 @@ export class CreateProductDto {
   @IsOptional()
   image_url?: string;
 }
-
