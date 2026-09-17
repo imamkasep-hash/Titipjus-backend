@@ -122,7 +122,7 @@ export class MerchantsService {
    * Cari merchant terdekat (dalam radius km)
    * Pakai PostGIS — perlu RPC function atau query raw
    */
-  async findNearby(latitude: number, longitude: number, radiusKm = 5) {
+  async findNearby(_latitude: number, _longitude: number, _radiusKm = 5) {
     // Pakai RPC function di Supabase (kita buat nanti)
     // Untuk sekarang, return semua merchant
     const { data, error } = await this.supabase
