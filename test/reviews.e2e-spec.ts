@@ -22,20 +22,6 @@ describe('Reviews E2E', () => {
     }
     customerToken = customerLogin.body.access_token;
 
-    // 2. Login merchant
-    const merchantLogin = await request(BASE_URL)
-      .post('/api/v1/auth/login')
-      .send({
-        email: 'merchant@titipjus.com',
-        password: 'merchant123',
-      });
-
-    if (merchantLogin.status !== 200) {
-      throw new Error(
-        `Merchant login gagal: ${merchantLogin.status}`,
-      );
-    }
-    merchantToken = merchantLogin.body.access_token;
 
     // 3. Ambil merchant milik user
     const merchantsRes = await request(BASE_URL)
