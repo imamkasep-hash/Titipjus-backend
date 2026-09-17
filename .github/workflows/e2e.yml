@@ -1,16 +1,15 @@
 name: E2E Tests
 
 on:
-  # Manual trigger saja (karena butuh env production)
   workflow_dispatch:
-  # Atau schedule harian jam 2 pagi WIB
   schedule:
-    - cron: '0 19 * * *'  # 02:00 WIB (19:00 UTC)
+    - cron: '0 19 * * *'
 
 jobs:
   e2e:
     name: Run E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Checkout code
@@ -33,20 +32,66 @@ jobs:
       - name: 🏗️ Build project
         run: pnpm run build
 
+      - name: 📝 Create .env file
+        run: |
+          cat > .env << 'EOF'
+          NODE_ENV=test
+          PORT=3000
+          APP_URL=http://localhost:3000
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN=7d
+          MIDTRANS_SERVER_KEY=${{ secrets.MIDTRANS_SERVER_KEY }}
+          MIDTRANS_CLIENT_KEY=${{ secrets.MIDTRANS_CLIENT_KEY }}
+          MIDTRANS_IS_PRODUCTION=false
+          UPSTASH_REDIS_REST_URL=${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN=${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          ALLOWED_ORIGINS=http://localhost:3000
+          EOF
+          echo "=== .env created (values hidden) ==="
+          cat .env | sed 's/=.*/=***/'
+
       - name: 🚀 Start server in background
         run: |
-          NODE_ENV=test pnpm run start:prod &
-          echo "Waiting for server to start..."
+          nohup node dist/main > server.log 2>&1 &
+          echo "Server PID: $!"
+          
+          echo "=== Waiting for server ==="
           for i in {1..30}; do
-            if curl -s http://localhost:3000/api/v1/health/live > /dev/null; then
-              echo "✅ Server is up!"
+            if curl -s http://localhost:3000/api/v1/health/live > /dev/null 2>&1; then
+              echo "✅ Server is up after $((i*2))s!"
               break
             fi
             echo "Waiting... ($i/30)"
             sleep 2
           done
+          
+          echo ""
+          echo "=== Server log (FULL) ==="
+          cat server.log
+
+      - name: 🔍 Verify server is running
+        run: |
+          echo "=== Test health endpoint ==="
+          curl -v http://localhost:3000/api/v1/health/live || true
+          echo ""
+          echo "=== Port check ==="
+          netstat -tlnp | grep 3000 || echo "Port 3000 not listening"
+          echo ""
+          echo "=== Node processes ==="
+          ps aux | grep node | grep -v grep || echo "No node process"
 
       - name: 🧪 Run E2E tests
         run: pnpm test:e2e
         env:
           TEST_BASE_URL: http://localhost:3000
+        continue-on-error: false
+
+      - name: 📋 Show server log on failure
+        if: failure()
+        run: |
+          echo "=== Server log (on failure) ==="
+          cat server.log || echo "No server.log"
