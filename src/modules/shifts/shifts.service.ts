@@ -32,7 +32,7 @@ export class ShiftsService {
     // Bikin WKT POLYGON string
     const wkt = `POLYGON((${coords.map((c) => `${c[0]} ${c[1]}`).join(', ')}))`;
 
-    const { data: _data, error } = await admin
+    const { data, error } = await admin
       .from('zones')
       .insert({
         name: dto.name,
@@ -93,10 +93,6 @@ export class ShiftsService {
   async findZoneByPoint(lng: number, lat: number) {
     const admin = this.supabase.getAdmin();
 
-    const { data: _data, error } = await admin
-      .from('zones')
-      .select('*')
-      .eq('is_active', true);
 
     if (error) throw error;
 
@@ -153,7 +149,7 @@ export class ShiftsService {
     }
 
     // Insert
-    const { data: _data, error } = await admin
+    const { data, error } = await admin
       .from('driver_shifts')
       .insert({
         driver_id: driver.id,
@@ -184,7 +180,7 @@ export class ShiftsService {
 
     if (!driver) throw new NotFoundException('Driver tidak ditemukan');
 
-    const { data: _data, error } = await admin
+    const { data, error } = await admin
       .from('driver_shifts')
       .select('*, zones(id, name, description)')
       .eq('driver_id', driver.id)
@@ -295,7 +291,7 @@ export class ShiftsService {
 
     const currentTime = `${timePart[0]}:${timePart[1]}:00`;
 
-    const { data: _data, error } = await admin
+    const { data, error } = await admin
       .from('driver_shifts')
       .select('driver_id, drivers(id, user_id, is_online, is_busy)')
       .eq('zone_id', zoneId)
