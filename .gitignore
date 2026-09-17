@@ -42,3 +42,6 @@ vitest.config.d.ts
 vitest.config.d.mts
 vitest.config.mjs
 vitest.config.mjs.map
+
+# Pnpm auto-generated (jangan commit)
+pnpm-workspace.yaml
