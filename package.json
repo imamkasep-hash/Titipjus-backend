@@ -1,10 +1,7 @@
 {
   "name": "titipjus-backend",
   "version": "0.0.1",
-  "description": "Titip Jus Backend",
-  "author": "",
   "private": true,
-  "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
     "start": "nest start",
@@ -13,9 +10,11 @@
     "start:prod": "node dist/main",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
     "lint": "oxlint src/ test/",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:cov": "vitest run --coverage"
+    "test": "vitest run src",
+    "test:watch": "vitest src",
+    "test:cov": "vitest run src --coverage",
+    "test:e2e": "vitest run test",
+    "test:all": "vitest run"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

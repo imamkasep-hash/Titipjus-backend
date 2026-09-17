@@ -39,11 +39,14 @@ import { HealthModule } from './modules/health/health.module';
       envFilePath: '.env',
     }),
 
-    ThrottlerModule.forRoot([
-      { ttl: 60000, limit: 100 },
-      { name: 'auth', ttl: 60000, limit: 5 },
-    ]),
-
+    ThrottlerModule.forRoot(
+      process.env.NODE_ENV === 'test'
+        ? [{ ttl: 60000, limit: 10000 }] // Longgar saat test
+        : [
+            { ttl: 60000, limit: 100 },
+            { name: 'auth', ttl: 60000, limit: 5 },
+          ],
+    ),
     AuthModule,
     UsersModule,
     MerchantsModule,

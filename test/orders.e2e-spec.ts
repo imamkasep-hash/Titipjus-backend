@@ -23,15 +23,30 @@ describe('Orders E2E', () => {
     expect(token).toBeDefined();
 
     // 2. Ambil merchant & product untuk test
-    const merchantsRes = await request(BASE_URL).get(
-      '/api/v1/merchants/search',
-    );
+
+    // 2. Ambil SEMUA merchants, cari yang punya produk
+    const merchantsRes = await request(BASE_URL).get('/api/v1/merchants');
     expect(merchantsRes.status).toBe(200);
-    expect(merchantsRes.body.data.length).toBeGreaterThan(0);
+    expect(merchantsRes.body.length).toBeGreaterThan(0);
 
-    const merchant = merchantsRes.body.data[0];
-    merchantId = merchant.id;
+    // Loop merchant sampai ketemu yang punya produk
+    let found = false;
+    for (const m of merchantsRes.body) {
+      const productsRes = await request(BASE_URL).get(
+        `/api/v1/products/merchant/${m.id}`,
+      );
 
+      if (productsRes.status === 200 && productsRes.body.length > 0) {
+        merchantId = m.id;
+        productId = productsRes.body[0].id;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      throw new Error('Tidak ada merchant yang punya produk untuk test');
+    }
     const productsRes = await request(BASE_URL).get(
       `/api/v1/products/merchant/${merchantId}`,
     );
