@@ -5,7 +5,7 @@ const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 
 describe('Reviews E2E', () => {
   let customerToken: string;
-
+  let merchantId: string;
   beforeAll(async () => {
     // 1. Login customer
     const customerLogin = await request(BASE_URL)
