@@ -16,6 +16,8 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      all: true,
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.spec.ts',
@@ -31,7 +33,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-   '@': resolve(import.meta.dirname, './src'),
+      '@': resolve(import.meta.dirname, './src'),
     },
     tsconfigPaths: true,
   },
